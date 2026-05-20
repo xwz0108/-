@@ -480,7 +480,7 @@ function RecognizePage() {
 
       {/* API Debug Info */}
       {apiDebugInfo && (
-        <Accordion sx={{ mt: 3, borderRadius: 2, overflow: 'hidden' }}>
+        <Accordion defaultExpanded sx={{ mt: 3, borderRadius: 2, overflow: 'hidden' }}>
           <AccordionSummary expandIcon={<AutoAwesomeIcon />}>
             <Typography variant="subtitle1" fontWeight="bold">
               🔧 API 调试信息
@@ -511,7 +511,7 @@ function RecognizePage() {
               {JSON.stringify(apiDebugInfo.dish || {}, null, 2)}
             </Paper>
             <Typography variant="subtitle2" gutterBottom color="success.main">
-              果蔬识别响应：
+              通用识别响应：
             </Typography>
             <Paper
               component="pre"
@@ -527,7 +527,7 @@ function RecognizePage() {
                 wordBreak: 'break-all',
               }}
             >
-              {JSON.stringify(apiDebugInfo.ingredient || {}, null, 2)}
+              {JSON.stringify(apiDebugInfo.general || {}, null, 2)}
             </Paper>
           </AccordionDetails>
         </Accordion>
