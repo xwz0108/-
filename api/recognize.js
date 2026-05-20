@@ -12,11 +12,21 @@ export default async function handler(req, res) {
 
   try {
     // 1. 获取百度 token
+    const apiKey = process.env.VITE_BAIDU_API_KEY;
+    const secretKey = process.env.VITE_BAIDU_SECRET_KEY;
+
+    if (!apiKey || !secretKey) {
+      return res.status(500).json({ error: '环境变量未配置', details: { apiKey: !!apiKey, secretKey: !!secretKey } });
+    }
+
     const tokenRes = await fetch(
-      `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${process.env.VITE_BAIDU_API_KEY}&client_secret=${process.env.VITE_BAIDU_SECRET_KEY}`
+      `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${apiKey}&client_secret=${secretKey}`
     );
     const tokenData = await tokenRes.json();
     
+    if (tokenData.error) {
+      return res.status(500).json({ error: '获取 token 失败', details: tokenData });
+    }
     if (!tokenData.access_token) {
       return res.status(500).json({ error: '获取 token 失败', details: tokenData });
     }
@@ -45,9 +55,18 @@ export default async function handler(req, res) {
 
     const result = await recognizeRes.json();
 
+    // 检查百度返回的错误
+    if (result.error_code) {
+      return res.status(200).json({ 
+        error_code: result.error_code, 
+        error_msg: result.error_msg,
+        baidu_response: result 
+      });
+    }
+
     return res.status(200).json(result);
   } catch (error) {
     console.error('API 调用失败:', error);
-    return res.status(500).json({ error: '服务器错误', message: error.message });
+    return res.status(500).json({ error: '服务器错误', message: error.message, stack: error.stack });
   }
 }
