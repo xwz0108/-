@@ -163,12 +163,6 @@ function RecognizePage() {
         console.log('[API] 菜品识别结果:', dishRes)
         console.log('[API] 通用识别结果:', generalRes)
         
-        const debugInfo = {
-          dish: dishRes.status === 'fulfilled' ? dishRes.value : { error: dishRes.reason?.message || '请求失败' },
-          general: generalRes.status === 'fulfilled' ? generalRes.value : { error: generalRes.reason?.message || '请求失败' },
-        }
-        setApiDebugInfo(debugInfo)
-
         // 解析菜品识别
         let dishResult = null
         if (dishRes.status === 'fulfilled' && dishRes.value && !dishRes.value.error_code && dishRes.value.result && dishRes.value.result.length > 0) {
@@ -183,6 +177,14 @@ function RecognizePage() {
             generalResult = { name: top.keyword || top.name, calorie: 0, confidence: top.score || 0, source: '通用识别' }
           }
         }
+        const debugInfo = {
+          dish: dishRes.status === 'fulfilled' ? dishRes.value : { error: dishRes.reason?.message || '请求失败' },
+          general: generalRes.status === 'fulfilled' ? generalRes.value : { error: generalRes.reason?.message || '请求失败' },
+          dishResult,
+          generalResult,
+        }
+        setApiDebugInfo(debugInfo)
+
         // 优先策略
         let best = null
         if (dishResult && dishResult.confidence > 0.3) {
