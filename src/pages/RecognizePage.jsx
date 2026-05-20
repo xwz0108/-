@@ -55,51 +55,100 @@ const NUTRITION_DB = {
   '木瓜':     { calories: 43,  protein: 0.5,  fat: 0.3,  carbs: 11.0 },
 }
 
-// 调用服务端 API（Vercel 部署后走 /api/recognize，本地开发走代理）
-async function callRecognizeAPI(base64Image, type = 'dish') {
-  const API_BASE = import.meta.env.DEV ? '/baidu-api' : '/api';
-  const BAIDU_API_KEY = import.meta.env.VITE_BAIDU_API_KEY;
-  const BAIDU_SECRET_KEY = import.meta.env.VITE_BAIDU_SECRET_KEY;
+// 调用 Hugging Face API（免费，支持 CORS，无需后端）
+async function callRecognizeAPI(base64Image) {
+  const base64Data = base64Image.split(',')[1];
+  const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
 
-  if (import.meta.env.DEV) {
-    // 本地开发：直接调用百度 API（通过 Vite 代理）
-    if (!BAIDU_API_KEY || !BAIDU_SECRET_KEY) {
-      throw new Error('本地开发需要设置 VITE_BAIDU_API_KEY 和 VITE_BAIDU_SECRET_KEY 环境变量');
-    }
-    let token;
-    const tokenRes = await fetch(
-      `/baidu-api/oauth/2.0/token?grant_type=client_credentials&client_id=${BAIDU_API_KEY}&client_secret=${BAIDU_SECRET_KEY}`
-    );
-    const tokenData = await tokenRes.json();
-    if (tokenData.error) throw new Error(`Token错误: ${tokenData.error_description}`);
-    token = tokenData.access_token;
+  // 1. 调用 Hugging Face 食物分类 API
+  let foodName = '';
+  let confidence = 0;
 
-    let apiUrl = '';
-    if (type === 'dish') {
-      apiUrl = `/baidu-api/rest/2.0/image-classify/v2/dish?access_token=${token}`;
-    } else {
-      apiUrl = `/baidu-api/rest/2.0/image-classify/v2/advanced/general?access_token=${token}`;
-    }
-
-    const params = new URLSearchParams();
-    params.append('image', base64Image.split(',')[1]);
-    params.append('top_num', '5');
-
-    const res = await fetch(apiUrl, {
+  try {
+    const hfRes = await fetch('https://api-inference.huggingface.co/models/nateraw/food', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: imageBuffer,
     });
-    return res.json();
-  } else {
-    // 生产环境：调用服务端 API
-    const res = await fetch('/api/recognize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64Image, type })
-    });
-    return res.json();
+
+    if (hfRes.ok) {
+      const hfData = await hfRes.json();
+      if (Array.isArray(hfData) && hfData.length > 0) {
+        foodName = hfData[0].label;
+        confidence = hfData[0].score;
+      }
+    }
+  } catch (e) {
+    console.log('Hugging Face API 调用失败:', e.message);
   }
+
+  if (!foodName) {
+    throw new Error('AI 识别服务暂时不可用，请稍后重试');
+  }
+
+  // 2. 调用 Open Food Facts 查询热量
+  let calories = 0;
+  let nutrition = { calories: 0, protein: 0, fat: 0, carbs: 0 };
+
+  try {
+    const offRes = await fetch(
+      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(foodName)}&search_simple=1&action=process&json=1&page_size=1`
+    );
+
+    if (offRes.ok) {
+      const offData = await offRes.json();
+      if (offData.products && offData.products.length > 0) {
+        const product = offData.products[0];
+        const nutriments = product.nutriments || {};
+        calories = nutriments['energy-kcal_100g'] || nutriments['energy_100g'] / 4.184 || 0;
+        nutrition = {
+          calories: Math.round(calories) || 100,
+          protein: nutriments['proteins_100g'] || 0,
+          fat: nutriments['fat_100g'] || 0,
+          carbs: nutriments['carbohydrates_100g'] || 0,
+        };
+      }
+    }
+  } catch (e) {
+    console.log('Open Food Facts 查询失败:', e.message);
+  }
+
+  // 3. 兜底：常见食物热量估算
+  if (nutrition.calories === 0) {
+    const calorieMap = {
+      'apple': 52, 'banana': 89, 'orange': 47, 'grape': 69,
+      'strawberry': 32, 'watermelon': 30, 'mango': 60, 'peach': 39,
+      'pear': 57, 'kiwi': 61, 'pineapple': 50, 'cherry': 63,
+      'blueberry': 57, 'grapefruit': 42, 'lemon': 29, 'dragon_fruit': 51,
+      'durian': 147, 'litchi': 66, 'longan': 60, 'hami_melon': 34,
+      'papaya': 43, 'pizza': 266, 'burger': 295, 'pasta': 157,
+      'rice': 116, 'chicken': 165, 'beef': 250, 'pork': 242,
+      'fish': 100, 'salad': 35, 'broccoli': 34, 'egg': 155,
+    };
+
+    const foodKey = foodName.toLowerCase().replace(/\s+/g, '_');
+    for (const [key, cal] of Object.entries(calorieMap)) {
+      if (foodKey.includes(key) || key.includes(foodKey)) {
+        nutrition.calories = cal;
+        break;
+      }
+    }
+    if (nutrition.calories === 0) nutrition.calories = 100;
+  }
+
+  return {
+    result: [{
+      name: foodName,
+      calorie: nutrition.calories,
+      probability: confidence,
+      nutrition: {
+        protein: nutrition.protein,
+        fat: nutrition.fat,
+        carbs: nutrition.carbs,
+      },
+    }],
+    source: 'Hugging Face + Open Food Facts',
+  };
 }
 
 function RecognizePage() {
