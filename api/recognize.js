@@ -57,21 +57,21 @@ export default async function handler(request) {
         messages: [
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `请识别这张图片中的食物，并按以下 JSON 格式返回：
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: image
+                  }
+                },
+                {
+                  type: 'text',
+                  text: `请识别这张图片中的食物，并按以下 JSON 格式返回：
 {"foodName": "食物名称", "calories": 每100克热量(整数), "protein": 蛋白质(克), "fat": 脂肪(克), "carbs": 碳水化合物(克), "weight": 估算重量(克), "confidence": 置信度(0-1之间的小数)}
 
 请只返回 JSON，不要返回其他文字。`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: image
                 }
-              }
-            ]
+              ]
           }
         ],
         temperature: 0.7,
