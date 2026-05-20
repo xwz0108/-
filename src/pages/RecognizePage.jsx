@@ -480,57 +480,74 @@ function RecognizePage() {
 
       {/* API Debug Info */}
       {apiDebugInfo && (
-        <Accordion defaultExpanded sx={{ mt: 3, borderRadius: 2, overflow: 'hidden' }}>
-          <AccordionSummary expandIcon={<AutoAwesomeIcon />}>
-            <Typography variant="subtitle1" fontWeight="bold">
-              🔧 API 调试信息
-              {apiDebugInfo.dish?.error_code && (
-                <Chip label={`菜品识别错误: ${apiDebugInfo.dish.error_code}`} color="error" size="small" sx={{ ml: 1 }} />
-              )}
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Typography variant="subtitle2" gutterBottom color="primary">
-              菜品识别响应：
-            </Typography>
-            <Paper
-              component="pre"
-              sx={{
-                fontSize: '0.75rem',
-                bgcolor: '#1E1E1E',
-                color: '#E0E0E0',
-                p: 2,
-                borderRadius: 1,
-                overflow: 'auto',
-                maxHeight: 300,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-                mb: 2,
-              }}
-            >
-              {JSON.stringify(apiDebugInfo.dish || {}, null, 2)}
-            </Paper>
-            <Typography variant="subtitle2" gutterBottom color="success.main">
-              通用识别响应：
-            </Typography>
-            <Paper
-              component="pre"
-              sx={{
-                fontSize: '0.75rem',
-                bgcolor: '#1E1E1E',
-                color: '#E0E0E0',
-                p: 2,
-                borderRadius: 1,
-                overflow: 'auto',
-                maxHeight: 300,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-              }}
-            >
-              {JSON.stringify(apiDebugInfo.general || {}, null, 2)}
-            </Paper>
-          </AccordionDetails>
-        </Accordion>
+        <Paper sx={{ mt: 3, p: 3, borderRadius: 2, bgcolor: '#fafafa' }}>
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+            🔧 API 调试信息
+            {apiDebugInfo.dish?.error_code && (
+              <Chip label={`菜品识别错误: ${apiDebugInfo.dish.error_code}`} color="error" size="small" sx={{ ml: 1 }} />
+            )}
+          </Typography>
+          <Typography variant="subtitle2" gutterBottom color="primary">
+            菜品识别响应：
+          </Typography>
+          <Paper
+            component="pre"
+            sx={{
+              fontSize: '0.75rem',
+              bgcolor: '#1E1E1E',
+              color: '#E0E0E0',
+              p: 2,
+              borderRadius: 1,
+              overflow: 'auto',
+              maxHeight: 300,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              mb: 2,
+            }}
+          >
+            {JSON.stringify(apiDebugInfo.dish || {}, null, 2)}
+          </Paper>
+          <Typography variant="subtitle2" gutterBottom color="success.main">
+            通用识别响应：
+          </Typography>
+          <Paper
+            component="pre"
+            sx={{
+              fontSize: '0.75rem',
+              bgcolor: '#1E1E1E',
+              color: '#E0E0E0',
+              p: 2,
+              borderRadius: 1,
+              overflow: 'auto',
+              maxHeight: 300,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              mb: 2,
+            }}
+          >
+            {JSON.stringify(apiDebugInfo.general || {}, null, 2)}
+          </Paper>
+          <Typography variant="subtitle2" gutterBottom color="warning.main">
+            解析结果：
+          </Typography>
+          <Paper
+            component="pre"
+            sx={{
+              fontSize: '0.75rem',
+              bgcolor: '#1E1E1E',
+              color: '#E0E0E0',
+              p: 2,
+              borderRadius: 1,
+              overflow: 'auto',
+              maxHeight: 200,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+            }}
+          >
+            dishResult: {JSON.stringify(apiDebugInfo.dishResult || null, null, 2)}
+            generalResult: {JSON.stringify(apiDebugInfo.generalResult || null, null, 2)}
+          </Paper>
+        </Paper>
       )}
 
       {/* Tips */}
