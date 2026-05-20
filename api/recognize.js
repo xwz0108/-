@@ -1,115 +1,146 @@
-import https from 'https';
-
-function makeRequest(url, options = {}, postData = null) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(url, options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        resolve({ statusCode: res.statusCode, data });
-      });
-    });
-    req.on('error', reject);
-    if (postData) req.write(postData);
-    req.end();
-  });
-}
-
 export default async function handler(req, res) {
+  // 设置 CORS 头
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { image, type = 'dish' } = req.body;
+  const { image } = req.body;
 
   if (!image) {
     return res.status(400).json({ error: '缺少图片数据' });
   }
 
   try {
-    const apiKey = process.env.VITE_BAIDU_API_KEY;
-    const secretKey = process.env.VITE_BAIDU_SECRET_KEY;
+    const base64Data = image.split(',')[1];
+    const imageBuffer = Buffer.from(base64Data, 'base64');
 
-    if (!apiKey || !secretKey) {
-      return res.status(500).json({ 
-        error: '环境变量未配置', 
-        details: { apiKey: !!apiKey, secretKey: !!secretKey } 
-      });
-    }
-
-    // 1. 获取百度 token
-    const tokenUrl = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${apiKey}&client_secret=${secretKey}`;
-    const tokenRes = await makeRequest(tokenUrl, { method: 'POST' });
-    const tokenData = JSON.parse(tokenRes.data);
-
-    if (tokenData.error) {
-      return res.status(500).json({ error: '获取 token 失败', details: tokenData });
-    }
-    if (!tokenData.access_token) {
-      return res.status(500).json({ error: '获取 token 失败', details: tokenData });
-    }
-
-    const token = tokenData.access_token;
-
-    // 2. 调用识别 API
-    let apiUrl = '';
-    if (type === 'dish') {
-      apiUrl = `https://aip.baidubce.com/rest/2.0/image-classify/v2/dish?access_token=${token}`;
-    } else if (type === 'general') {
-      apiUrl = `https://aip.baidubce.com/rest/2.0/image-classify/v2/advanced/general?access_token=${token}`;
-    } else {
-      return res.status(400).json({ error: '不支持的识别类型' });
-    }
-
-    const params = new URLSearchParams();
-    params.append('image', image.split(',')[1]);
-    params.append('top_num', '5');
-
-    const recognizeRes = await makeRequest(apiUrl, {
+    // 1. 调用 Hugging Face 食物分类 API（免费，无需 token）
+    const hfUrl = 'https://api-inference.hugggingface.co/models/nateraw/food';
+    
+    const hfRes = await fetch(hfUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    }, params.toString());
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: imageBuffer,
+    });
 
-    // 添加调试信息
-    const debugInfo = {
-      statusCode: recognizeRes.statusCode,
-      rawDataLength: recognizeRes.data.length,
-      rawDataPreview: recognizeRes.data.substring(0, 500),
-      apiUrl: apiUrl.replace(token, '***TOKEN***'),
-      imageLength: image.length,
-    };
+    let foodName = '';
+    let confidence = 0;
 
-    let result;
-    try {
-      result = JSON.parse(recognizeRes.data);
-    } catch (parseError) {
+    if (hfRes.ok) {
+      const hfData = await hfRes.json();
+      // 返回格式: [{ label: 'pizza', score: 0.95 }, ...]
+      if (Array.isArray(hfData) && hfData.length > 0) {
+        foodName = hfData[0].label;
+        confidence = hfData[0].score;
+      }
+    }
+
+    // 2. 如果 Hugging Face 失败，尝试另一个模型
+    if (!foodName) {
+      const hfUrl2 = 'https://api-inference.hugggingface.co/models/microsoft/resnet-50';
+      const hfRes2 = await fetch(hfUrl2, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: imageBuffer,
+      });
+
+      if (hfRes2.ok) {
+        const hfData2 = await hfRes2.json();
+        if (Array.isArray(hfData2) && hfData2.length > 0) {
+          // ResNet 返回的是 ImageNet 类别，需要映射
+          foodName = hfData2[0].label;
+          confidence = hfData2[0].score;
+        }
+      }
+    }
+
+    if (!foodName) {
       return res.status(200).json({
-        error: 'JSON解析失败',
-        parseError: parseError.message,
-        debug: debugInfo,
-        rawData: recognizeRes.data.substring(0, 1000),
+        result: [],
+        error: '无法识别食物，请尝试重新拍摄清晰的照片',
       });
     }
 
-    if (result.error_code) {
-      return res.status(200).json({
-        error_code: result.error_code,
-        error_msg: result.error_msg,
-        baidu_response: result,
-        debug: debugInfo,
-      });
+    // 3. 调用 Open Food Facts API 查询热量（免费，无需 token）
+    let calories = 0;
+    let nutrition = { calories: 0, protein: 0, fat: 0, carbs: 0 };
+
+    try {
+      const offUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(foodName)}&search_simple=1&action=process&json=1&page_size=1`;
+      const offRes = await fetch(offUrl);
+      
+      if (offRes.ok) {
+        const offData = await offRes.json();
+        if (offData.products && offData.products.length > 0) {
+          const product = offData.products[0];
+          const nutriments = product.nutriments || {};
+          calories = nutriments['energy-kcal_100g'] || nutriments['energy_100g'] / 4.184 || 0;
+          nutrition = {
+            calories: Math.round(calories) || 100,
+            protein: nutriments['proteins_100g'] || 0,
+            fat: nutriments['fat_100g'] || 0,
+            carbs: nutriments['carbohydrates_100g'] || 0,
+          };
+        }
+      }
+    } catch (e) {
+      console.log('Open Food Facts 查询失败:', e.message);
+    }
+
+    // 4. 如果 Open Food Facts 没有数据，使用估算值
+    if (nutrition.calories === 0) {
+      // 常见食物热量估算（每100g）
+      const calorieMap = {
+        'apple': 52, 'banana': 89, 'orange': 47, 'grape': 69,
+        'strawberry': 32, 'watermelon': 30, 'mango': 60, 'peach': 39,
+        'pear': 57, 'kiwi': 61, 'pineapple': 50, 'cherry': 63,
+        'blueberry': 57, 'grapefruit': 42, 'lemon': 29, 'dragon_fruit': 51,
+        'durian': 147, 'litchi': 66, 'longan': 60, 'hami_melon': 34,
+        'papaya': 43, 'pizza': 266, 'burger': 295, 'pasta': 157,
+        'rice': 116, 'chicken': 165, 'beef': 250, 'pork': 242,
+        'fish': 100, 'salad': 35, 'broccoli': 34, 'egg': 155,
+      };
+
+      const foodKey = foodName.toLowerCase();
+      for (const [key, cal] of Object.entries(calorieMap)) {
+        if (foodKey.includes(key) || key.includes(foodKey)) {
+          nutrition.calories = cal;
+          break;
+        }
+      }
+
+      if (nutrition.calories === 0) {
+        nutrition.calories = 100; // 默认值
+      }
     }
 
     return res.status(200).json({
-      ...result,
-      debug: debugInfo,
+      result: [{
+        name: foodName,
+        calorie: nutrition.calories,
+        probability: confidence,
+        nutrition: {
+          protein: nutrition.protein,
+          fat: nutrition.fat,
+          carbs: nutrition.carbs,
+        },
+      }],
+      source: 'Hugging Face + Open Food Facts',
     });
+
   } catch (error) {
     console.error('API 调用失败:', error);
-    return res.status(500).json({ 
-      error: '服务器错误', 
-      message: error.message, 
-      stack: error.stack 
+    return res.status(500).json({
+      error: '服务器错误',
+      message: error.message,
     });
   }
 }
