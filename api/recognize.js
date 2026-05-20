@@ -41,32 +41,61 @@ export default async function handler(request) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // 调用 Hugging Face API
+    // 调用 Hugging Face API（带重试，免费模型需要唤醒）
     let foodName = '';
     let confidence = 0;
+    let lastError = '';
 
-    try {
-      const hfRes = await fetch('https://api-inference.huggingface.co/models/nateraw/food', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream' },
-        body: bytes,
-      });
+    const models = [
+      'nateraw/food',
+      'microsoft/resnet-50',
+    ];
 
-      if (hfRes.ok) {
-        const hfData = await hfRes.json();
-        if (Array.isArray(hfData) && hfData.length > 0) {
-          foodName = hfData[0].label;
-          confidence = hfData[0].score;
+    for (const model of models) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          console.log(`Trying model ${model}, attempt ${attempt + 1}`);
+          const hfRes = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+            },
+            body: bytes,
+          });
+
+          if (hfRes.ok) {
+            const hfData = await hfRes.json();
+            console.log(`Model ${model} response:`, JSON.stringify(hfData));
+
+            if (Array.isArray(hfData) && hfData.length > 0) {
+              foodName = hfData[0].label;
+              confidence = hfData[0].score;
+              break;
+            }
+          } else {
+            const errorText = await hfRes.text();
+            lastError = `Model ${model}: ${hfRes.status} ${errorText}`;
+            console.error(lastError);
+          }
+        } catch (e) {
+          lastError = `Model ${model}: ${e.message}`;
+          console.error(lastError);
+        }
+
+        // 等待后重试
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
-    } catch (e) {
-      console.error('Hugging Face API error:', e);
+
+      if (foodName) break;
     }
 
     if (!foodName) {
       return new Response(JSON.stringify({
         result: [],
-        error: '无法识别食物，请尝试重新拍摄清晰的照片'
+        error: 'AI 识别服务暂时不可用，请稍后重试',
+        details: lastError,
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
