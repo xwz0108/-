@@ -1,14 +1,11 @@
 import { useState, useCallback, useRef } from 'react'
 import {
-  Container, Typography, Box, Button, Paper, CircularProgress, Alert, Fade, Zoom, LinearProgress, Chip, Tooltip, IconButton,
-  Accordion, AccordionSummary, AccordionDetails,
+  Container, Typography, Box, Button, Paper, CircularProgress, Alert, Fade, Zoom, LinearProgress, Chip,
 } from '@mui/material'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import CameraAltIcon from '@mui/icons-material/CameraAlt'
 import ReplayIcon from '@mui/icons-material/Replay'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import PendingIcon from '@mui/icons-material/Pending'
 import { useNavigate } from 'react-router-dom'
 
 // 模拟模式开关（生产环境关闭）
@@ -109,7 +106,6 @@ function RecognizePage() {
   const [uploadedImage, setUploadedImage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [apiDebugInfo, setApiDebugInfo] = useState(null)
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
@@ -120,7 +116,6 @@ function RecognizePage() {
     reader.onload = (e) => {
       setUploadedImage(e.target.result)
       setError('')
-      setApiDebugInfo(null)
     }
     reader.readAsDataURL(file)
   }, [])
@@ -156,7 +151,6 @@ function RecognizePage() {
     if (!uploadedImage) { setError('请先上传食物图片'); return }
     setIsLoading(true)
     setError('')
-    let debugInfo = null
     try {
       let result
       if (!USE_MOCK) {
@@ -164,9 +158,6 @@ function RecognizePage() {
         // 调用一次 API（Hugging Face 食物识别）
         const apiRes = await callRecognizeAPI(uploadedImage);
         console.log('[API] 识别结果:', JSON.stringify(apiRes, null, 2))
-
-        debugInfo = { api: apiRes };
-        setApiDebugInfo(debugInfo)
 
         if (apiRes.error) {
           throw new Error(`识别失败: ${apiRes.error}`)
@@ -214,12 +205,6 @@ function RecognizePage() {
     } catch (err) {
       setError(err.message || '识别失败，请重试')
       console.error(err)
-      // 使用局部变量 debugInfo 确保调试信息不会丢失
-      if (debugInfo) {
-        setApiDebugInfo({ ...debugInfo, error: err.message })
-      } else {
-        setApiDebugInfo({ error: err.message })
-      }
     } finally {
       setIsLoading(false)
     }
@@ -228,7 +213,6 @@ function RecognizePage() {
   const handleRetake = () => {
     setUploadedImage(null)
     setError('')
-    setApiDebugInfo(null)
   }
 
   const getConfidenceLabel = (conf) => {
@@ -475,78 +459,6 @@ function RecognizePage() {
             {error}
           </Alert>
         </Fade>
-      )}
-
-      {/* API Debug Info */}
-      {apiDebugInfo && (
-        <Paper sx={{ mt: 3, p: 3, borderRadius: 2, bgcolor: '#fafafa' }}>
-          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-            🔧 API 调试信息
-            {apiDebugInfo.dish?.error_code && (
-              <Chip label={`菜品识别错误: ${apiDebugInfo.dish.error_code}`} color="error" size="small" sx={{ ml: 1 }} />
-            )}
-          </Typography>
-          <Typography variant="subtitle2" gutterBottom color="primary">
-            菜品识别响应：
-          </Typography>
-          <Paper
-            component="pre"
-            sx={{
-              fontSize: '0.75rem',
-              bgcolor: '#1E1E1E',
-              color: '#E0E0E0',
-              p: 2,
-              borderRadius: 1,
-              overflow: 'auto',
-              maxHeight: 300,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-              mb: 2,
-            }}
-          >
-            {JSON.stringify(apiDebugInfo.dish || {}, null, 2)}
-          </Paper>
-          <Typography variant="subtitle2" gutterBottom color="success.main">
-            通用识别响应：
-          </Typography>
-          <Paper
-            component="pre"
-            sx={{
-              fontSize: '0.75rem',
-              bgcolor: '#1E1E1E',
-              color: '#E0E0E0',
-              p: 2,
-              borderRadius: 1,
-              overflow: 'auto',
-              maxHeight: 300,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-              mb: 2,
-            }}
-          >
-            {JSON.stringify(apiDebugInfo.general || {}, null, 2)}
-          </Paper>
-          <Typography variant="subtitle2" gutterBottom color="warning.main">
-            解析结果：
-          </Typography>
-          <Paper
-            component="pre"
-            sx={{
-              fontSize: '0.75rem',
-              bgcolor: '#1E1E1E',
-              color: '#E0E0E0',
-              p: 2,
-              borderRadius: 1,
-              overflow: 'auto',
-              maxHeight: 200,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-            }}
-          >
-            dishResult: {JSON.stringify(apiDebugInfo.dishResult || null, null, 2)}
-            generalResult: {JSON.stringify(apiDebugInfo.generalResult || null, null, 2)}
-          </Paper>
-        </Paper>
       )}
 
       {/* Tips */}
