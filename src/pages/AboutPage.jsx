@@ -29,7 +29,7 @@ function AboutPage() {
   ]
 
   const advantages = [
-    { icon: <SpeedIcon />, title: 'AI 双模型识别', desc: '同时调用菜品识别 + 果蔬识别双模型，提高识别准确率' },
+    { icon: <SpeedIcon />, title: 'GLM-4.6V AI 识别', desc: '基于智谱 GLM-4.6V-Flash 多模态模型，直接理解图片内容，自动输出食物名称和热量营养' },
     { icon: <CheckCircleIcon />, title: '操作便捷', desc: '支持拖拽上传、点击上传，三步完成识别（上传→识别→查看结果）' },
     { icon: <AnalyticsIcon />, title: '营养数据全面', desc: '不仅提供热量，还展示蛋白质、脂肪、碳水化合物三大营养素' },
     { icon: <PhoneAndroidIcon />, title: '响应式设计', desc: '适配手机、平板、电脑多种设备，随时随地使用' },
@@ -115,11 +115,11 @@ function AboutPage() {
         </Typography>
         <Grid container spacing={2} sx={{ mt: 2 }}>
           {[
-            '百度 AI 菜品识别 + 果蔬识别双模型融合',
+            'GLM-4.6V-Flash 多模态 AI 视觉识别',
             'Vite + React 现代化前端技术栈',
             'MUI + Tailwind CSS 双样式方案',
             'localStorage 本地数据持久化',
-            'Vite Proxy 解决跨域问题',
+            'Vercel Edge Function 服务端部署',
             '响应式设计，适配多端设备',
           ].map((item, idx) => (
             <Grid item xs={12} sm={6} key={idx}>

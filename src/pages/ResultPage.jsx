@@ -1,6 +1,6 @@
 import {
   Container, Typography, Box, Button, Divider, Paper, List, ListItem, ListItemIcon, ListItemText,
-  Accordion, AccordionSummary, AccordionDetails, Chip, Fade, Zoom, LinearProgress, Grid, IconButton,
+  Chip, Fade, Zoom, Grid, IconButton,
 } from '@mui/material'
 import { useLocation, useNavigate } from 'react-router-dom'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
@@ -8,10 +8,8 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment'
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter'
 import MonitorWeightIcon from '@mui/icons-material/MonitorWeight'
 import { Link } from 'react-router-dom'
-import FoodCard from '../components/FoodCard'
 import ShareIcon from '@mui/icons-material/Share'
 import ReplayIcon from '@mui/icons-material/Replay'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions'
 import SentimentSatisfiedIcon from '@mui/icons-material/SentimentSatisfied'
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied'
@@ -22,8 +20,6 @@ function ResultPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const foodData = location.state?.foodData
-  const apiDebugInfo = location.state?.apiDebugInfo
-
   if (!foodData) {
     return (
       <Container maxWidth="md" sx={{ textAlign: 'center', py: 8 }}>
@@ -114,10 +110,10 @@ function ResultPage() {
             识别完成！
           </Typography>
           <Chip
-            label={`识别来源: ${foodData.source || '未知'}`}
+            label="GLM-4.6V AI 识别"
             size="small"
+            color="primary"
             sx={{ fontWeight: 'bold', borderRadius: 10 }}
-            color={foodData.source === '菜品识别' ? 'primary' : foodData.source === '果蔬识别' ? 'success' : 'default'}
           />
         </Box>
       </Fade>
@@ -327,61 +323,6 @@ function ResultPage() {
           </Typography>
         </Paper>
       </Fade>
-
-      {/* API Debug Info */}
-      {apiDebugInfo && (
-        <Accordion sx={{ mb: 4, borderRadius: 4, overflow: 'hidden' }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle1" fontWeight="bold">
-              🔧 API 原始响应（调试用）
-              {apiDebugInfo.dish?.error_code && (
-                <Chip label={`菜品识别错误: ${apiDebugInfo.dish.error_code}`} color="error" size="small" sx={{ ml: 1 }} />
-              )}
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Typography variant="subtitle2" gutterBottom color="primary">
-              菜品识别响应：
-            </Typography>
-            <Paper
-              component="pre"
-              sx={{
-                fontSize: '0.75rem',
-                bgcolor: '#1E1E1E',
-                color: '#E0E0E0',
-                p: 2,
-                borderRadius: 1,
-                overflow: 'auto',
-                maxHeight: 300,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-                mb: 2,
-              }}
-            >
-              {JSON.stringify(apiDebugInfo.dish || {}, null, 2)}
-            </Paper>
-            <Typography variant="subtitle2" gutterBottom color="success.main">
-              果蔬识别响应：
-            </Typography>
-            <Paper
-              component="pre"
-              sx={{
-                fontSize: '0.75rem',
-                bgcolor: '#1E1E1E',
-                color: '#E0E0E0',
-                p: 2,
-                borderRadius: 1,
-                overflow: 'auto',
-                maxHeight: 300,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-              }}
-            >
-              {JSON.stringify(apiDebugInfo.ingredient || {}, null, 2)}
-            </Paper>
-          </AccordionDetails>
-        </Accordion>
-      )}
 
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap', mt: 4 }}>
