@@ -66,6 +66,8 @@ export default async function handler(request) {
     let apiUrl = '';
     if (type === 'dish') {
       apiUrl = `https://aip.baidubce.com/rest/2.0/image-classify/v2/dish?access_token=${token}`;
+    } else if (type === 'fruit') {
+      apiUrl = `https://aip.baidubce.com/rest/2.0/image-classify/v1/fruit_vegetable?access_token=${token}`;
     } else {
       apiUrl = `https://aip.baidubce.com/rest/2.0/image-classify/v2/advanced_general?access_token=${token}`;
     }

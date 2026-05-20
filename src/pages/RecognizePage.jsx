@@ -193,13 +193,13 @@ function RecognizePage() {
       let result
       if (!USE_MOCK) {
         console.log('[API] 开始调用百度识别API')
-        // 并行调用菜品和通用识别
-        const [dishRes, generalRes] = await Promise.allSettled([
+        // 并行调用菜品和果蔬识别
+        const [dishRes, fruitRes] = await Promise.allSettled([
           callRecognizeAPI(uploadedImage, 'dish'),
-          callRecognizeAPI(uploadedImage, 'general'),
+          callRecognizeAPI(uploadedImage, 'fruit'),
         ])
         console.log('[API] 菜品识别结果:', JSON.stringify(dishRes.value, null, 2))
-        console.log('[API] 通用识别结果:', JSON.stringify(generalRes.value, null, 2))
+        console.log('[API] 果蔬识别结果:', JSON.stringify(fruitRes.value, null, 2))
 
         // 解析菜品识别
         let dishResult = null
@@ -207,12 +207,12 @@ function RecognizePage() {
           const top = dishRes.value.result[0]
           dishResult = { name: top.name, calorie: top.calorie || 0, confidence: top.probability || 0, source: '菜品识别' }
         }
-        // 解析通用识别（可识别水果）
-        let generalResult = null
-        if (generalRes.status === 'fulfilled' && generalRes.value && !generalRes.value.error_code && generalRes.value.result && generalRes.value.result.length > 0) {
-          const top = generalRes.value.result[0]
+        // 解析果蔬识别
+        let fruitResult = null
+        if (fruitRes.status === 'fulfilled' && fruitRes.value && !fruitRes.value.error_code && fruitRes.value.result && fruitRes.value.result.length > 0) {
+          const top = fruitRes.value.result[0]
           if (top.score > 0.3) {
-            generalResult = { name: top.keyword || top.name, calorie: 0, confidence: top.score || 0, source: '通用识别' }
+            fruitResult = { name: top.name || top.keyword, calorie: 0, confidence: top.score || 0, source: '果蔬识别' }
           }
         }
 
@@ -220,8 +220,8 @@ function RecognizePage() {
         let best = null
         if (dishResult && dishResult.confidence > 0.3) {
           best = dishResult
-        } else if (generalResult) {
-          best = generalResult
+        } else if (fruitResult) {
+          best = fruitResult
         } else if (dishResult) {
           best = dishResult
         }
