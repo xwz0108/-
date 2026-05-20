@@ -53,6 +53,81 @@ const NUTRITION_DB = {
   '龙眼':     { calories: 60,  protein: 1.2,  fat: 0.1,  carbs: 15.5 },
   '哈密瓜':   { calories: 34,  protein: 0.8,  fat: 0.2,  carbs: 8.2 },
   '木瓜':     { calories: 43,  protein: 0.5,  fat: 0.3,  carbs: 11.0 },
+  // 西式快餐 / 常见食物
+  '汉堡':     { calories: 295, protein: 14.0, fat: 14.0, carbs: 30.0 },
+  '披萨':     { calories: 266, protein: 11.0, fat: 10.0, carbs: 33.0 },
+  '薯条':     { calories: 312, protein: 3.4,  fat: 15.0, carbs: 41.0 },
+  '炸鸡':     { calories: 279, protein: 17.0, fat: 16.0, carbs: 16.0 },
+  '热狗':     { calories: 290, protein: 10.0, fat: 16.0, carbs: 28.0 },
+  '三明治':   { calories: 280, protein: 12.0, fat: 12.0, carbs: 30.0 },
+  '意大利面': { calories: 157, protein: 5.8,  fat: 1.7,  carbs: 30.0 },
+  '面包':     { calories: 265, protein: 8.0,  fat: 3.2,  carbs: 49.0 },
+  '蛋糕':     { calories: 320, protein: 4.0,  fat: 15.0, carbs: 45.0 },
+  '甜甜圈':   { calories: 452, protein: 4.8,  fat: 25.0, carbs: 51.0 },
+  '冰淇淋':   { calories: 127, protein: 3.5,  fat: 7.0,  carbs: 13.0 },
+  '咖啡':     { calories: 2,   protein: 0.3,  fat: 0.0,  carbs: 0.0 },
+  '奶茶':     { calories: 52,  protein: 1.0,  fat: 1.5,  carbs: 8.0 },
+  '啤酒':     { calories: 43,  protein: 0.5,  fat: 0.0,  carbs: 3.6 },
+  '红酒':     { calories: 83,  protein: 0.1,  fat: 0.0,  carbs: 2.6 },
+  '寿司':     { calories: 143, protein: 5.0,  fat: 4.0,  carbs: 21.0 },
+  '拉面':     { calories: 138, protein: 5.2,  fat: 3.5,  carbs: 22.0 },
+  '饺子':     { calories: 240, protein: 10.0, fat: 8.0,  carbs: 32.0 },
+  '包子':     { calories: 227, protein: 8.0,  fat: 7.0,  carbs: 33.0 },
+  '馒头':     { calories: 223, protein: 7.0,  fat: 1.1,  carbs: 46.0 },
+  '油条':     { calories: 386, protein: 6.9,  fat: 17.6, carbs: 50.0 },
+  '豆浆':     { calories: 31,  protein: 3.0,  fat: 1.6,  carbs: 1.2 },
+  '牛奶':     { calories: 66,  protein: 3.2,  fat: 3.6,  carbs: 4.8 },
+  '酸奶':     { calories: 72,  protein: 3.1,  fat: 2.7,  carbs: 9.3 },
+  '鸡蛋':     { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1 },
+  '煎蛋':     { calories: 196, protein: 13.0, fat: 15.0, carbs: 1.1 },
+  '牛排':     { calories: 240, protein: 26.0, fat: 15.0, carbs: 0.0 },
+  '猪排':     { calories: 242, protein: 20.0, fat: 16.0, carbs: 4.0 },
+  '香肠':     { calories: 301, protein: 10.0, fat: 26.0, carbs: 6.0 },
+  '培根':     { calories: 541, protein: 12.0, fat: 53.0, carbs: 1.4 },
+  '奶酪':     { calories: 350, protein: 22.0, fat: 28.0, carbs: 3.0 },
+  '巧克力':   { calories: 546, protein: 4.9,  fat: 31.0, carbs: 60.0 },
+  '饼干':     { calories: 433, protein: 6.0,  fat: 12.0, carbs: 76.0 },
+  '薯片':     { calories: 536, protein: 7.0,  fat: 35.0, carbs: 49.0 },
+}
+
+// 根据热量和食物名称估算营养成分（数据库无匹配时使用）
+function estimateNutrition(foodName, totalCalorie) {
+  if (!totalCalorie || totalCalorie <= 0) totalCalorie = 200 // 默认200大卡
+  const name = foodName.toLowerCase()
+  let proteinRatio, fatRatio, carbsRatio
+
+  // 根据食物关键词判断营养比例
+  if (/鸡|肉|鱼|虾|牛|羊|猪|排|腿|胸|肉/.test(name)) {
+    // 高蛋白肉类：蛋白30% 脂肪35% 碳水35%
+    proteinRatio = 0.30; fatRatio = 0.35; carbsRatio = 0.35
+  } else if (/沙拉|蔬菜|菜|苹果|香蕉|橙|葡萄|草莓|西瓜|芒果|桃|梨|猕猴桃|菠萝|柚|柠檬|火龙果|木瓜|哈密瓜|西兰花|青菜|菠菜/.test(name)) {
+    // 蔬果：蛋白15% 脂肪10% 碳水75%
+    proteinRatio = 0.15; fatRatio = 0.10; carbsRatio = 0.75
+  } else if (/汉堡|披萨|薯条|炸鸡|热狗|三明治|面包|蛋糕|甜甜圈|饼干|薯片|意大利面|拉面|饺子|包子|馒头|油条/.test(name)) {
+    // 高碳水主食/快餐：蛋白15% 脂肪30% 碳水55%
+    proteinRatio = 0.15; fatRatio = 0.30; carbsRatio = 0.55
+  } else if (/牛奶|酸奶|奶酪|豆浆|鸡蛋|煎蛋/.test(name)) {
+    // 蛋奶豆制品：蛋白25% 脂肪40% 碳水35%
+    proteinRatio = 0.25; fatRatio = 0.40; carbsRatio = 0.35
+  } else if (/巧克力|冰淇淋|奶茶|啤酒|红酒|咖啡/.test(name)) {
+    // 零食饮料：蛋白5% 脂肪35% 碳水60%
+    proteinRatio = 0.05; fatRatio = 0.35; carbsRatio = 0.60
+  } else {
+    // 默认混合食物：蛋白20% 脂肪30% 碳水50%
+    proteinRatio = 0.20; fatRatio = 0.30; carbsRatio = 0.50
+  }
+
+  // 热量换算：蛋白/碳水 4卡/g，脂肪 9卡/g
+  const proteinCal = totalCalorie * proteinRatio
+  const fatCal = totalCalorie * fatRatio
+  const carbsCal = totalCalorie * carbsRatio
+
+  return {
+    calories: Math.round(totalCalorie),
+    protein: Math.round(proteinCal / 4 * 10) / 10,
+    fat: Math.round(fatCal / 9 * 10) / 10,
+    carbs: Math.round(carbsCal / 4 * 10) / 10,
+  }
 }
 
 // 调用后端 API（Vercel Edge Function）
@@ -160,7 +235,8 @@ function RecognizePage() {
         const dishName = best.name
         const calorie = best.calorie
         const confidence = best.confidence
-        const nutrition = NUTRITION_DB[dishName] || { calories: calorie || 50, protein: 1.0, fat: 0.2, carbs: 12.0 }
+        const dbNutrition = NUTRITION_DB[dishName]
+        const nutrition = dbNutrition || estimateNutrition(dishName, calorie)
         const weight = calorie > 0 ? Math.round((calorie / (nutrition.calories || 100)) * 100) : 150
         result = {
           foodName: dishName,
