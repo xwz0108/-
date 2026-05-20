@@ -56,11 +56,11 @@ const NUTRITION_DB = {
 }
 
 // 调用后端 API（Vercel Edge Function）
-async function callRecognizeAPI(base64Image) {
+async function callRecognizeAPI(base64Image, type = 'dish') {
   const res = await fetch('/api/recognize', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: base64Image })
+    body: JSON.stringify({ image: base64Image, type })
   });
   return res.json();
 }
@@ -117,33 +117,51 @@ function RecognizePage() {
     try {
       let result
       if (!USE_MOCK) {
-        console.log('[API] 开始调用识别API（Hugging Face）')
-        // 调用一次 API（Hugging Face 食物识别）
-        const apiRes = await callRecognizeAPI(uploadedImage);
-        console.log('[API] 识别结果:', JSON.stringify(apiRes, null, 2))
+        console.log('[API] 开始调用百度识别API')
+        // 并行调用菜品和通用识别
+        const [dishRes, generalRes] = await Promise.allSettled([
+          callRecognizeAPI(uploadedImage, 'dish'),
+          callRecognizeAPI(uploadedImage, 'general'),
+        ])
+        console.log('[API] 菜品识别结果:', JSON.stringify(dishRes.value, null, 2))
+        console.log('[API] 通用识别结果:', JSON.stringify(generalRes.value, null, 2))
 
-        if (apiRes.error) {
-          throw new Error(`识别失败: ${apiRes.error}`)
+        // 解析菜品识别
+        let dishResult = null
+        if (dishRes.status === 'fulfilled' && dishRes.value && !dishRes.value.error_code && dishRes.value.result && dishRes.value.result.length > 0) {
+          const top = dishRes.value.result[0]
+          dishResult = { name: top.name, calorie: top.calorie || 0, confidence: top.probability || 0, source: '菜品识别' }
+        }
+        // 解析通用识别（可识别水果）
+        let generalResult = null
+        if (generalRes.status === 'fulfilled' && generalRes.value && !generalRes.value.error_code && generalRes.value.result && generalRes.value.result.length > 0) {
+          const top = generalRes.value.result[0]
+          if (top.score > 0.3) {
+            generalResult = { name: top.keyword || top.name, calorie: 0, confidence: top.score || 0, source: '通用识别' }
+          }
         }
 
-        if (!apiRes.result || apiRes.result.length === 0) {
+        // 优先策略
+        let best = null
+        if (dishResult && dishResult.confidence > 0.3) {
+          best = dishResult
+        } else if (generalResult) {
+          best = generalResult
+        } else if (dishResult) {
+          best = dishResult
+        }
+
+        console.log('[API] 最佳识别结果:', best)
+
+        if (!best) {
           throw new Error('未能识别到食物，请尝试重新拍摄清晰的照片')
         }
 
-        const top = apiRes.result[0];
-        const dishName = top.name;
-        const calorie = top.calorie || (top.nutrition ? top.nutrition.calories : 0) || 100;
-        const confidence = top.probability || 0;
-
-        // 从本地数据库补充营养信息
-        const nutrition = NUTRITION_DB[dishName] || {
-          calories: calorie || 100,
-          protein: top.nutrition?.protein || 1.0,
-          fat: top.nutrition?.fat || 0.2,
-          carbs: top.nutrition?.carbs || 12.0,
-        };
-
-        const weight = calorie > 0 ? Math.round((calorie / (nutrition.calories || 100)) * 100) : 150;
+        const dishName = best.name
+        const calorie = best.calorie
+        const confidence = best.confidence
+        const nutrition = NUTRITION_DB[dishName] || { calories: calorie || 50, protein: 1.0, fat: 0.2, carbs: 12.0 }
+        const weight = calorie > 0 ? Math.round((calorie / (nutrition.calories || 100)) * 100) : 150
         result = {
           foodName: dishName,
           calories: calorie || nutrition.calories,
@@ -152,9 +170,9 @@ function RecognizePage() {
           carbs: nutrition.carbs,
           weight,
           confidence,
-          source: apiRes.source || 'Hugging Face',
+          source: best.source,
           goal: localStorage.getItem('healthGoal') || '减脂',
-        };
+        }
       } else {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         const goal = localStorage.getItem('healthGoal') || '减脂'
