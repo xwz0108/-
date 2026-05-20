@@ -61,9 +61,14 @@ const NUTRITION_DB = {
 // 调用服务端 API（Vercel 部署后走 /api/recognize，本地开发走代理）
 async function callRecognizeAPI(base64Image, type = 'dish') {
   const API_BASE = import.meta.env.DEV ? '/baidu-api' : '/api';
-  
+  const BAIDU_API_KEY = import.meta.env.VITE_BAIDU_API_KEY;
+  const BAIDU_SECRET_KEY = import.meta.env.VITE_BAIDU_SECRET_KEY;
+
   if (import.meta.env.DEV) {
     // 本地开发：直接调用百度 API（通过 Vite 代理）
+    if (!BAIDU_API_KEY || !BAIDU_SECRET_KEY) {
+      throw new Error('本地开发需要设置 VITE_BAIDU_API_KEY 和 VITE_BAIDU_SECRET_KEY 环境变量');
+    }
     let token;
     const tokenRes = await fetch(
       `/baidu-api/oauth/2.0/token?grant_type=client_credentials&client_id=${BAIDU_API_KEY}&client_secret=${BAIDU_SECRET_KEY}`
