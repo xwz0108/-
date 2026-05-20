@@ -196,7 +196,9 @@ function RecognizePage() {
         }
         console.log('[API] 最佳识别结果:', best)
         if (!best) {
-          throw new Error('未能识别到食物，请换一张更清晰的图片')
+          const dishKeys = dishRes.status === 'fulfilled' && dishRes.value ? Object.keys(dishRes.value).join(', ') : 'N/A'
+          const generalKeys = generalRes.status === 'fulfilled' && generalRes.value ? Object.keys(generalRes.value).join(', ') : 'N/A'
+          throw new Error(`未能识别到食物。菜品识别字段: ${dishKeys} | 通用识别字段: ${generalKeys}`)
         }
         const dishName = best.name
         const calorie = best.calorie
