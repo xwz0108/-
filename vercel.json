@@ -1,7 +1,11 @@
 {
   "version": 2,
-  "outputDirectory": "dist",
+  "builds": [
+    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } },
+    { "src": "api/recognize.js", "use": "@vercel/node" }
+  ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
