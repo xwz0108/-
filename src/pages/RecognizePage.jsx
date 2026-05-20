@@ -11,6 +11,9 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PendingIcon from '@mui/icons-material/Pending'
 import { useNavigate } from 'react-router-dom'
 
+// 模拟模式开关（生产环境关闭）
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
+
 // 营养数据库（扩充水果）
 const NUTRITION_DB = {
   '红烧肉':  { calories: 350, protein: 15.0, fat: 25.0, carbs: 12.0 },
