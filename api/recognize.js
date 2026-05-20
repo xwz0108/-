@@ -70,17 +70,40 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }, params.toString());
 
-    const result = JSON.parse(recognizeRes.data);
+    // 添加调试信息
+    const debugInfo = {
+      statusCode: recognizeRes.statusCode,
+      rawDataLength: recognizeRes.data.length,
+      rawDataPreview: recognizeRes.data.substring(0, 500),
+      apiUrl: apiUrl.replace(token, '***TOKEN***'),
+      imageLength: image.length,
+    };
+
+    let result;
+    try {
+      result = JSON.parse(recognizeRes.data);
+    } catch (parseError) {
+      return res.status(200).json({
+        error: 'JSON解析失败',
+        parseError: parseError.message,
+        debug: debugInfo,
+        rawData: recognizeRes.data.substring(0, 1000),
+      });
+    }
 
     if (result.error_code) {
       return res.status(200).json({
         error_code: result.error_code,
         error_msg: result.error_msg,
-        baidu_response: result
+        baidu_response: result,
+        debug: debugInfo,
       });
     }
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+      ...result,
+      debug: debugInfo,
+    });
   } catch (error) {
     console.error('API 调用失败:', error);
     return res.status(500).json({ 

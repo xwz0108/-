@@ -151,6 +151,7 @@ function RecognizePage() {
     if (!uploadedImage) { setError('请先上传食物图片'); return }
     setIsLoading(true)
     setError('')
+    let debugInfo = null
     try {
       let result
       if (!USE_MOCK) {
@@ -160,9 +161,9 @@ function RecognizePage() {
           callRecognizeAPI(uploadedImage, 'dish'),
           callRecognizeAPI(uploadedImage, 'general'),
         ])
-        console.log('[API] 菜品识别结果:', dishRes)
-        console.log('[API] 通用识别结果:', generalRes)
-        
+        console.log('[API] 菜品识别结果:', JSON.stringify(dishRes.value, null, 2))
+        console.log('[API] 通用识别结果:', JSON.stringify(generalRes.value, null, 2))
+
         // 解析菜品识别
         let dishResult = null
         if (dishRes.status === 'fulfilled' && dishRes.value && !dishRes.value.error_code && dishRes.value.result && dishRes.value.result.length > 0) {
@@ -177,7 +178,7 @@ function RecognizePage() {
             generalResult = { name: top.keyword || top.name, calorie: 0, confidence: top.score || 0, source: '通用识别' }
           }
         }
-        const debugInfo = {
+        debugInfo = {
           dish: dishRes.status === 'fulfilled' ? dishRes.value : { error: dishRes.reason?.message || '请求失败' },
           general: generalRes.status === 'fulfilled' ? generalRes.value : { error: generalRes.reason?.message || '请求失败' },
           dishResult,
@@ -222,7 +223,12 @@ function RecognizePage() {
     } catch (err) {
       setError(err.message || '识别失败，请重试')
       console.error(err)
-      setApiDebugInfo((prev) => ({ ...prev, error: err.message }))
+      // 使用局部变量 debugInfo 确保调试信息不会丢失
+      if (debugInfo) {
+        setApiDebugInfo({ ...debugInfo, error: err.message })
+      } else {
+        setApiDebugInfo({ error: err.message })
+      }
     } finally {
       setIsLoading(false)
     }
