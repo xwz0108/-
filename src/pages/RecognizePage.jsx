@@ -182,7 +182,7 @@ function RecognizePage() {
       const history = JSON.parse(localStorage.getItem('foodHistory') || '[]')
       history.unshift({ ...result, timestamp: new Date().toISOString(), id: Date.now() })
       localStorage.setItem('foodHistory', JSON.stringify(history.slice(0, 50)))
-      navigate('/result', { state: { foodData: result, apiDebugInfo } })
+      navigate('/result', { state: { foodData: result } })
     } catch (err) {
       setError(err.message || '识别失败，请重试')
       console.error(err)

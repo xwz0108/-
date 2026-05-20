@@ -67,7 +67,7 @@ export default async function handler(request) {
     if (type === 'dish') {
       apiUrl = `https://aip.baidubce.com/rest/2.0/image-classify/v2/dish?access_token=${token}`;
     } else {
-      apiUrl = `https://aip.baidubce.com/rest/2.0/image-classify/v2/advanced/general?access_token=${token}`;
+      apiUrl = `https://aip.baidubce.com/rest/2.0/image-classify/v2/advanced_general?access_token=${token}`;
     }
 
     const base64Data = image.split(',')[1];
