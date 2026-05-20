@@ -161,8 +161,10 @@ function RecognizePage() {
           callRecognizeAPI(uploadedImage, 'dish'),
           callRecognizeAPI(uploadedImage, 'general'),
         ])
-        console.log('[API] 菜品识别结果:', JSON.stringify(dishRes.value, null, 2))
-        console.log('[API] 通用识别结果:', JSON.stringify(generalRes.value, null, 2))
+        console.log('[API] 菜品识别状态:', dishRes.status)
+        console.log('[API] 菜品识别结果:', dishRes.status === 'fulfilled' ? JSON.stringify(dishRes.value, null, 2) : 'Rejected: ' + JSON.stringify(dishRes.reason, null, 2))
+        console.log('[API] 通用识别状态:', generalRes.status)
+        console.log('[API] 通用识别结果:', generalRes.status === 'fulfilled' ? JSON.stringify(generalRes.value, null, 2) : 'Rejected: ' + JSON.stringify(generalRes.reason, null, 2))
 
         // 解析菜品识别
         let dishResult = null
@@ -199,7 +201,13 @@ function RecognizePage() {
         if (!best) {
           const dishKeys = dishRes.status === 'fulfilled' && dishRes.value ? Object.keys(dishRes.value).join(', ') : 'N/A'
           const generalKeys = generalRes.status === 'fulfilled' && generalRes.value ? Object.keys(generalRes.value).join(', ') : 'N/A'
-          throw new Error(`未能识别到食物。菜品识别字段: ${dishKeys} | 通用识别字段: ${generalKeys}`)
+          const dishError = dishRes.status === 'rejected' ? dishRes.reason?.message || JSON.stringify(dishRes.reason) : ''
+          const generalError = generalRes.status === 'rejected' ? generalRes.reason?.message || JSON.stringify(generalRes.reason) : ''
+          throw new Error(
+            `未能识别到食物。\n` +
+            `菜品识别字段: ${dishKeys}${dishError ? ' (错误: ' + dishError + ')' : ''}\n` +
+            `通用识别字段: ${generalKeys}${generalError ? ' (错误: ' + generalError + ')' : ''}`
+          )
         }
         const dishName = best.name
         const calorie = best.calorie
