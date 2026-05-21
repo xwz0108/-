@@ -111,7 +111,7 @@ function calcNutrition(totalCalorie, proteinRatio, fatRatio, carbsRatio) {
   }
 }
 
-// 调用 GLM-4.6V-Flash API
+// 调用 GLM-4.6V API
 async function callGLMAPI(base64Image) {
   const res = await fetch('/api/recognize', {
     method: 'POST',
@@ -171,7 +171,7 @@ function RecognizePage() {
     setIsLoading(true)
     setError('')
     try {
-      console.log('[GLM] 开始调用 GLM-4.6V-Flash API')
+      console.log('[GLM] 开始调用 GLM-4.6V API')
       const glmResult = await callGLMAPI(uploadedImage)
       console.log('[GLM] 识别结果:', JSON.stringify(glmResult, null, 2))
 
@@ -192,7 +192,7 @@ function RecognizePage() {
         carbs: dbNutrition ? nutrition.carbs : (glmResult.carbs || nutrition.carbs),
         weight: glmResult.weight || 150,
         confidence: glmResult.confidence || 0.85,
-        source: 'GLM-4.6V-Flash',
+        source: 'GLM-4.6V',
         goal: localStorage.getItem('healthGoal') || '减脂',
       }
 

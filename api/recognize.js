@@ -2,7 +2,7 @@ export const config = {
   runtime: 'edge',
 };
 
-// 使用 GLM-4.6V-Flash 进行食物识别
+// 使用 GLM-4.6V 进行食物识别
 export default async function handler(request) {
   // CORS
   if (request.method === 'OPTIONS') {
@@ -45,7 +45,7 @@ export default async function handler(request) {
       });
     }
 
-    // 调用 GLM-4.6V-Flash API
+    // 调用 GLM-4.6V API
     const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
       method: 'POST',
       headers: {
@@ -53,7 +53,7 @@ export default async function handler(request) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'glm-4.6v-flash',
+        model: 'glm-4.6v',
         messages: [
           {
             role: 'user',
@@ -127,7 +127,7 @@ export default async function handler(request) {
     result.carbs = result.carbs || 20;
     result.weight = result.weight || 150;
     result.confidence = result.confidence || 0.85;
-    result.source = 'GLM-4.6V-Flash';
+    result.source = 'GLM-4.6V';
 
     return new Response(JSON.stringify(result), {
       status: 200,

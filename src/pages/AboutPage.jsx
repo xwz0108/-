@@ -29,7 +29,7 @@ function AboutPage() {
   ]
 
   const advantages = [
-    { icon: <SpeedIcon />, title: 'GLM-4.6V AI 识别', desc: '基于智谱 GLM-4.6V-Flash 多模态模型，直接理解图片内容，自动输出食物名称和热量营养' },
+    { icon: <SpeedIcon />, title: 'GLM-4.6V AI 识别', desc: '基于智谱 GLM-4.6V 多模态模型，直接理解图片内容，自动输出食物名称和热量营养' },
     { icon: <CheckCircleIcon />, title: '操作便捷', desc: '支持拖拽上传、点击上传，三步完成识别（上传→识别→查看结果）' },
     { icon: <AnalyticsIcon />, title: '营养数据全面', desc: '不仅提供热量，还展示蛋白质、脂肪、碳水化合物三大营养素' },
     { icon: <PhoneAndroidIcon />, title: '响应式设计', desc: '适配手机、平板、电脑多种设备，随时随地使用' },
@@ -115,7 +115,7 @@ function AboutPage() {
         </Typography>
         <Grid container spacing={2} sx={{ mt: 2 }}>
           {[
-            'GLM-4.6V-Flash 多模态 AI 视觉识别',
+            'GLM-4.6V 多模态 AI 视觉识别',
             'Vite + React 现代化前端技术栈',
             'MUI + Tailwind CSS 双样式方案',
             'localStorage 本地数据持久化',
