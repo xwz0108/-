@@ -180,16 +180,16 @@ function RecognizePage() {
       }
 
       const dishName = glmResult.foodName
-      // 优先使用数据库中的营养数据
+      // 优先级：GLM 返回的数据 > 本地数据库 > 估算
+      const hasGLMData = glmResult.protein > 0 && glmResult.fat > 0 && glmResult.carbs > 0
       const dbNutrition = NUTRITION_DB[dishName]
-      const nutrition = dbNutrition || estimateNutrition(dishName, glmResult.calories)
 
       const result = {
         foodName: dishName,
-        calories: dbNutrition ? nutrition.calories : (glmResult.calories || nutrition.calories),
-        protein: dbNutrition ? nutrition.protein : (glmResult.protein || nutrition.protein),
-        fat: dbNutrition ? nutrition.fat : (glmResult.fat || nutrition.fat),
-        carbs: dbNutrition ? nutrition.carbs : (glmResult.carbs || nutrition.carbs),
+        calories: glmResult.calories || (dbNutrition?.calories) || 200,
+        protein: glmResult.protein || (dbNutrition?.protein) || 10,
+        fat: glmResult.fat || (dbNutrition?.fat) || 10,
+        carbs: glmResult.carbs || (dbNutrition?.carbs) || 20,
         weight: glmResult.weight || 150,
         confidence: glmResult.confidence || 0.85,
         source: 'GLM-4.6V',
